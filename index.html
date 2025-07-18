@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medidor del Capital Intelectual</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #1a202c;
+            --bg-card: #2d3748;
+            --border-color: #4a5568;
+            --text-primary: #edf2f7;
+            --text-secondary: #a0aec0;
+            --accent-color: #4fd1c5;
+            --accent-hover: #2cbba9;
+            --danger-color: #e53e3e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            flex-grow: 1;
+        }
+
+        header {
+            text-align: center;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        header h1 span {
+            color: var(--accent-color);
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        #ic-form {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .capital-card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 25px;
+            border-left: 5px solid var(--accent-color);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* Colores específicos para cada tarjeta */
+        .capital-card.human { border-color: #63b3ed; animation-delay: 0.1s; }
+        .capital-card.structural { border-color: #4fd1c5; animation-delay: 0.2s; }
+        .capital-card.relational { border-color: #f6ad55; animation-delay: 0.3s; }
+        .capital-card.innovation { border-color: #b794f4; animation-delay: 0.4s; }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card-header svg {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .human svg { color: #63b3ed; }
+        .structural svg { color: #4fd1c5; }
+        .relational svg { color: #f6ad55; }
+        .innovation svg { color: #b794f4; }
+        
+        .inputs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            min-height: 42px; /* Mantener un espacio mínimo consistente */
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.3);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            animation: fadeInUp 0.5s ease-out forwards;
+            animation-delay: 0.5s;
+            opacity: 0;
+        }
+
+        .btn {
+            padding: 15px 35px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: var(--bg-dark);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(79, 209, 197, 0.2);
+        }
+        
+        .btn-secondary {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--border-color);
+        }
+
+        #results-section {
+            display: none; /* Se muestra con JS */
+            flex-direction: column;
+            gap: 20px;
+            background-color: var(--bg-card);
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 20px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        #results-section h2 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .results-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        #chart-container {
+            position: relative;
+            height: 400px;
+        }
+        
+        .scores-summary {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .score-item {
+            background-color: var(--bg-dark);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+        .score-item strong {
+            color: var(--accent-color);
+        }
+        
+        #total-score-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        #total-score-container p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+        
+        #total-score-container .score-display {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        #recommendation-box {
+            background-color: rgba(79, 209, 197, 0.1);
+            border-left: 4px solid var(--accent-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        #recommendation-box h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        #recommendation-box p {
+            color: var(--text-secondary);
+        }
+
+        footer {
+            width: 100%;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 40px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        footer p {
+            margin-bottom: 5px;
+        }
+        footer .university {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+
+        /* Animaciones */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Responsividad */
+        @media (max-width: 800px) {
+            .results-content {
+                grid-template-columns: 1fr;
+            }
+            #chart-container {
+                height: 300px;
+            }
+        }
+        @media (max-width: 600px) {
+            header h1 { font-size: 2rem; }
+            header p { font-size: 1rem; }
+            .card-header h2 { font-size: 1.3rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <header>
+            <h1>Medidor del <span>Capital Intelectual</span></h1>
+            <p>Evalúa los activos intangibles de tu organización. Ingresa los datos en cada categoría para obtener un análisis completo y visual de tu capital.</p>
+        </header>
+
+        <form id="ic-form">
+            <fieldset class="capital-card human">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0Z" /><path d="M2.25 10.5a8.25 8.25 0 0 1 8.25-8.25.75.75 0 0 1 .75.75v16.5a.75.75 0 0 1-.75.75A8.25 8.25 0 0 1 2.25 10.5Z" /><path d="M14.25 10.5a.75.75 0 0 0-.75-.75H3a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 .75-.75Z" /></svg>
+                    <h2>Capital Humano</h2>
+                </div>
+                <div class="inputs-grid">
+                    <div class="input-group">
+                        <label for="horas-capacitacion">Horas de Capacitación Promedio por Empleado (último año)</label>
+                        <input type="number" id="horas-capacitacion" placeholder="Ej: 40" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="cantidad-certificados">Cantidad de Certificados por Empleado (último año)</label>
+                        <input type="number" id="cantidad-certificados" placeholder="Ej: 2" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="nivel-educacion">Nivel de Educación Alcanzado</label>
+                        <select id="nivel-educacion">
+                            <option value="">Selecciona una opción</option>
+                            <option value="primaria">Primaria</option>
+                            <option value="secundaria">Secundaria</option>
+                            <option value="instituto">Instituto</option>
+                            <option value="universidad">Universidad</option>
+                            <option value="especializacion">Especialización</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="grado-academico">Grado Académico</label>
+                        <select id="grado-academico">
+                            <option value="">Selecciona una opción</option>
+                            <option value="bachiller">Bachiller</option>
+                            <option value="titulado">Titulado</option>
+                            <option value="maestria">Maestría</option>
+                            <option value="doctorado">Doctorado</option>
+                            <option value="pisdi">PISDI</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="anos-experiencia">Años de Experiencia Laboral Promedio</label>
+                        <input type="number" id="anos-experiencia" placeholder="Ej: 5" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="idiomas-dominados">Idiomas Dominados (promedio por empleado)</label>
+                        <input type="number" id="idiomas-dominados" placeholder="Ej: 1" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="satisfaccion-empleado">Puntuación de Satisfacción del Empleado</label>
+                        <select id="satisfaccion-empleado">
+                            <option value="">Selecciona una opción</option>
+                            <option value="muy_malo">1 - Muy Malo</option>
+                            <option value="malo">2 - Malo</option>
+                            <option value="regular">3 - Regular</option>
+                            <option value="bueno">4 - Bueno</option>
+                            <option value="excelente">5 - Excelente</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="capital-card relational">
+                <div class="card-header">
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a.75.75 0 0 0-1.5 0v.25a.75.75 0 0 0 1.5 0v-.25ZM12.75 9a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75V9Zm-3.75 0a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75V9Z" clip-rule="evenodd" /><path d="M2.25 12.313c0-1.657 1.343-3 3-3h13.5c1.657 0 3 1.343 3 3v6.187c0 1.657-1.343 3-3 3H5.25c-1.657 0-3-1.343-3-3V12.313Zm16.5 3.437a.75.75 0 0 0-1.5 0v1.5a.75.75 0 0 0 1.5 0v-1.5Z" /></svg>
+                    <h2>Capital Relacional</h2>
+                </div>
+                <div class="inputs-grid">
+                    <div class="input-group">
+                        <label for="tasa-retencion">Tasa de Retención de Clientes</label>
+                        <select id="tasa-retencion">
+                            <option value="">Selecciona una opción</option>
+                            <option value="muy_baja">Muy Baja (0-40%)</option>
+                            <option value="baja">Baja (41-60%)</option>
+                            <option value="media">Media (61-80%)</option>
+                            <option value="alta">Alta (81-95%)</option>
+                            <option value="excelente">Excelente (96-100%)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="reconocimiento-marca">Puntuación de Reconocimiento de Marca</label>
+                        <select id="reconocimiento-marca">
+                            <option value="">Selecciona una opción</option>
+                            <option value="nulo">Nulo (0-20%)</option>
+                            <option value="bajo">Bajo (21-40%)</option>
+                            <option value="medio">Medio (41-60%)</option>
+                            <option value="alto">Alto (61-80%)</option>
+                            <option value="muy_alto">Muy Alto (81-100%)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="alianzas-estrategicas">Número de Alianzas Estratégicas Activas</label>
+                        <input type="number" id="alianzas-estrategicas" placeholder="Ej: 5" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="interaccion-profesional">Nivel de Interacción Profesional</label>
+                        <select id="interaccion-profesional">
+                            <option value="">Selecciona una opción</option>
+                            <option value="escasa">1 - Escasa</option>
+                            <option value="basica">2 - Básica</option>
+                            <option value="regular">3 - Regular</option>
+                            <option value="frecuente">4 - Frecuente</option>
+                            <option value="extensa">5 - Extensa</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="red-contactos">Cobertura de Red de Contactos</label>
+                        <select id="red-contactos">
+                            <option value="">Selecciona una opción</option>
+                            <option value="limitada">1 - Limitada</option>
+                            <option value="pequena">2 - Pequeña</option>
+                            <option value="media">3 - Media</option>
+                            <option value="amplia">4 - Amplia</option>
+                            <option value="muy_amplia">5 - Muy Amplia</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="participacion-redes">Participación en Redes o Comunidades</label>
+                        <select id="participacion-redes">
+                            <option value="">Selecciona una opción</option>
+                            <option value="nula">Nula (0-20%)</option>
+                            <option value="poca">Poca (21-40%)</option>
+                            <option value="regular">Regular (41-60%)</option>
+                            <option value="activa">Activa (61-80%)</option>
+                            <option value="lider">Líder (81-100%)</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="capital-card structural">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10.5 1.511a1.5 1.5 0 0 1 3 0v1.173a5.25 5.25 0 0 1 3.999 3.999h1.173a1.5 1.5 0 0 1 0 3h-1.173a5.25 5.25 0 0 1-3.999 3.999v1.173a1.5 1.5 0 0 1-3 0v-1.173a5.25 5.25 0 0 1-3.999-3.999H2.327a1.5 1.5 0 0 1 0-3h1.173A5.25 5.25 0 0 1 7.5 2.684V1.511Z" /><path d="M7.5 9a4.5 4.5 0 1 0 9 0 4.5 4.5 0 0 0-9 0Z" /><path fill-rule="evenodd" d="M12 23.25a11.25 11.25 0 1 0 0-22.5 11.25 11.25 0 0 0 0 22.5Zm.75-10.5v-3a.75.75 0 0 0-1.5 0v3h-3a.75.75 0 0 0 0 1.5h3v3a.75.75 0 0 0 1.5 0v-3h3a.75.75 0 0 0 0-1.5h-3Z" clip-rule="evenodd" /></svg>
+                    <h2>Capital Estructural</h2>
+                </div>
+                <div class="inputs-grid">
+                    <div class="input-group">
+                        <label for="procesos-documentados">Número de Procesos Clave Documentados/Estandarizados</label>
+                        <input type="number" id="procesos-documentados" placeholder="Ej: 50" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="eficiencia-organizacional">Eficiencia Organizacional</label>
+                        <select id="eficiencia-organizacional">
+                            <option value="">Selecciona una opción</option>
+                            <option value="muy_baja">1 - Muy Baja</option>
+                            <option value="baja">2 - Baja</option>
+                            <option value="media">3 - Media</option>
+                            <option value="alta">4 - Alta</option>
+                            <option value="excelente">5 - Excelente</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="gestion-conocimiento">Gestión del Conocimiento</label>
+                        <select id="gestion-conocimiento">
+                            <option value="">Selecciona una opción</option>
+                            <option value="deficiente">1 - Deficiente</option>
+                            <option value="basica">2 - Básica</option>
+                            <option value="regular">3 - Regular</option>
+                            <option value="buena">4 - Buena</option>
+                            <option value="excelente">5 - Excelente</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="patentes-marcas">Número de Patentes/Marcas Registradas/Propiedad Intelectual</label>
+                        <input type="number" id="patentes-marcas" placeholder="Ej: 5" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="inversion-software">Inversión en Software/Tecnología (último año, en S./)</label>
+                        <input type="number" id="inversion-software" placeholder="Ej: 10000" min="0">
+                    </div>
+                </div>
+            </fieldset>
+            
+            <fieldset class="capital-card innovation">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12.378 1.602a.75.75 0 0 0-.756 0L3 7.232l9 4.5 9-4.5-8.622-5.63Z" /><path d="m21 8.732-9 4.5v9l9-4.5v-9Zm-10.5 4.5-9-4.5v9l9 4.5v-9Z" /></svg>
+                    <h2>Capital de Innovación</h2>
+                </div>
+                <div class="inputs-grid">
+                    <div class="input-group">
+                        <label for="ideas-implementadas">Cantidad de Ideas Implementadas por Empleado (último año)</label>
+                        <input type="number" id="ideas-implementadas" placeholder="Ej: 3" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="proyectos-innovacion-activos">Cantidad de Proyectos de Innovación Activos</label>
+                        <input type="number" id="proyectos-innovacion-activos" placeholder="Ej: 2" min="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="creatividad-aplicada">Creatividad Aplicada (Soluciones innovadoras a problemas)</label>
+                        <select id="creatividad-aplicada">
+                            <option value="">Selecciona una opción</option>
+                            <option value="baja">1 - Baja</option>
+                            <option value="moderada">2 - Moderada</option>
+                            <option value="buena">3 - Buena</option>
+                            <option value="alta">4 - Alta</option>
+                            <option value="excelente">5 - Excelente</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="participacion-id">Proyectos de Innovación (Participación en I+D o propuestas disruptivas)</label>
+                        <select id="participacion-id">
+                            <option value="">Selecciona una opción</option>
+                            <option value="nula">1 - Nula</option>
+                            <option value="ocasional">2 - Ocasional</option>
+                            <option value="regular">3 - Regular</option>
+                            <option value="activa">4 - Activa</option>
+                            <option value="lider">5 - Líder</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="participacion-mejoras">Participación en Mejoras (Iniciativas propias para mejorar procesos o productos)</label>
+                        <select id="participacion-mejoras">
+                            <option value="">Selecciona una opción</option>
+                            <option value="nula">1 - Nula</option>
+                            <option value="poca">2 - Poca</option>
+                            <option value="regular">3 - Regular</option>
+                            <option value="activa">4 - Activa</option>
+                            <option value="muy_activa">5 - Muy Activa</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="creatividad-soluciones">Creatividad de Soluciones Innovadoras Aplicadas para Problemas</label>
+                        <select id="creatividad-soluciones">
+                            <option value="">Selecciona una opción</option>
+                            <option value="baja">1 - Baja</option>
+                            <option value="moderada">2 - Moderada</option>
+                            <option value="buena">3 - Buena</option>
+                            <option value="alta">4 - Alta</option>
+                            <option value="excelente">5 - Excelente</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Calcular y Visualizar</button>
+            </div>
+        </form>
+
+        <section id="results-section">
+            <h2>Análisis de Capital Intelectual</h2>
+            <div class="results-content">
+                <div id="chart-container">
+                    <canvas id="ic-chart"></canvas>
+                </div>
+                <div class="scores-summary">
+                    <div class="score-item">Capital Humano: <strong id="ch-score"></strong></div>
+                    <div class="score-item">Capital Estructural: <strong id="ce-score"></strong></div>
+                    <div class="score-item">Capital Relacional: <strong id="cr-score"></strong></div>
+                    <div class="score-item">Capital de Innovación: <strong id="ci-score"></strong></div>
+                    <div id="total-score-container">
+                        <p>Puntuación Total</p>
+                        <div class="score-display" id="total-ic-score"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="recommendation-box">
+                <h3 id="recommendation-title"></h3>
+                <p id="recommendation-text"></p>
+            </div>
+             <div class="form-actions">
+                <button id="reset-button" class="btn btn-secondary">Realizar Nuevo Cálculo</button>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>Elaborado por: <strong>Diego Jean Frank Figueroa Rivera</strong></p>
+        <p class="university">Universidad Nacional Hermilio Valdizán</p>
+        <p>Facultad de Ingeniería Industrial, de Sistemas y Mecatrónica</p>
+        <p>Escuela Profesional de Ingeniería Industrial</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('ic-form');
+            const resultsSection = document.getElementById('results-section');
+            const resetButton = document.getElementById('reset-button');
+            let icChart = null;
+
+            // Función para normalizar un valor a una escala de 0 a 100
+            // Normaliza un valor dentro de un rango [min, max] a una escala de 0-100.
+            // Si invert es true, un valor mayor se considera peor (ej. rotación de personal).
+            const normalize = (value, min, max, invert = false) => {
+                value = Math.max(min, Math.min(value, max)); // Limitar valor al rango
+                const percentage = (value - min) / (max - min);
+                return invert ? (1 - percentage) * 100 : percentage * 100;
+            };
+
+            // Mapeos para los campos tipo select
+            const mapEducationLevel = (level) => {
+                switch (level.toLowerCase()) {
+                    case 'primaria': return 20;
+                    case 'secundaria': return 40;
+                    case 'instituto': return 60;
+                    case 'universidad': return 80;
+                    case 'especializacion': return 100;
+                    default: return 0;
+                }
+            };
+
+            const mapAcademicDegree = (degree) => {
+                switch (degree.toLowerCase()) {
+                    case 'bachiller': return 40;
+                    case 'titulado': return 60;
+                    case 'maestria': return 80;
+                    case 'doctorado': return 90;
+                    case 'pisdi': return 100; // Asumiendo PISDI como el más alto
+                    default: return 0;
+                }
+            };
+
+            const mapSatisfaction = (satisfaction) => {
+                switch (satisfaction) {
+                    case 'muy_malo': return 1;
+                    case 'malo': return 2;
+                    case 'regular': return 3;
+                    case 'bueno': return 4;
+                    case 'excelente': return 5;
+                    default: return 0;
+                }
+            };
+
+            const mapRetentionRate = (rate) => {
+                switch (rate) {
+                    case 'muy_baja': return 20; // 0-40%
+                    case 'baja': return 50;    // 41-60%
+                    case 'media': return 70;   // 61-80%
+                    case 'alta': return 90;    // 81-95%
+                    case 'excelente': return 100; // 96-100%
+                    default: return 0;
+                }
+            };
+
+            const mapBrandRecognition = (recognition) => {
+                switch (recognition) {
+                    case 'nulo': return 10;
+                    case 'bajo': return 30;
+                    case 'medio': return 50;
+                    case 'alto': return 75;
+                    case 'muy_alto': return 95;
+                    default: return 0;
+                }
+            };
+
+            const mapInteractionLevel = (level) => {
+                switch (level) {
+                    case 'escasa': return 1;
+                    case 'basica': return 2;
+                    case 'regular': return 3;
+                    case 'frecuente': return 4;
+                    case 'extensa': return 5;
+                    default: return 0;
+                }
+            };
+
+            const mapNetworkCoverage = (coverage) => {
+                switch (coverage) {
+                    case 'limitada': return 1;
+                    case 'pequena': return 2;
+                    case 'media': return 3;
+                    case 'amplia': return 4;
+                    case 'muy_amplia': return 5;
+                    default: return 0;
+                }
+            };
+
+            const mapParticipationInNetworks = (participation) => {
+                switch (participation) {
+                    case 'nula': return 10;
+                    case 'poca': return 30;
+                    case 'regular': return 50;
+                    case 'activa': return 75;
+                    case 'lider': return 95;
+                    default: return 0;
+                }
+            };
+
+            const mapEfficiency = (efficiency) => {
+                switch (efficiency) {
+                    case 'muy_baja': return 1;
+                    case 'baja': return 2;
+                    case 'media': return 3;
+                    case 'alta': return 4;
+                    case 'excelente': return 5;
+                    default: return 0;
+                }
+            };
+
+            const mapKnowledgeManagement = (management) => {
+                switch (management) {
+                    case 'deficiente': return 1;
+                    case 'basica': return 2;
+                    case 'regular': return 3;
+                    case 'buena': return 4;
+                    case 'excelente': return 5;
+                    default: return 0;
+                }
+            };
+
+            const mapCreativity = (creativity) => {
+                switch (creativity) {
+                    case 'baja': return 1;
+                    case 'moderada': return 2;
+                    case 'buena': return 3;
+                    case 'alta': return 4;
+                    case 'excelente': return 5;
+                    default: return 0;
+                }
+            };
+            
+            const mapInnovationParticipation = (participation) => {
+                switch (participation) {
+                    case 'nula': return 1;
+                    case 'ocasional': return 2;
+                    case 'regular': return 3;
+                    case 'activa': return 4;
+                    case 'lider': return 5;
+                    default: return 0;
+                }
+            };
+
+            // Funciones de cálculo para cada capital
+            const calculateHumanCapital = () => {
+                const horasCapacitacion = parseFloat(document.getElementById('horas-capacitacion').value) || 0;
+                const cantidadCertificados = parseFloat(document.getElementById('cantidad-certificados').value) || 0;
+                const nivelEducacion = document.getElementById('nivel-educacion').value;
+                const gradoAcademico = document.getElementById('grado-academico').value;
+                const anosExperiencia = parseFloat(document.getElementById('anos-experiencia').value) || 0;
+                const idiomasDominados = parseFloat(document.getElementById('idiomas-dominados').value) || 0;
+                const satisfaccionEmpleado = document.getElementById('satisfaccion-empleado').value;
+
+                // Normalización de cada indicador a 0-100
+                const scoreHoras = normalize(horasCapacitacion, 0, 100); // Max 100h/año para 100 pts
+                const scoreCertificados = normalize(cantidadCertificados, 0, 10); // Max 10 cert. para 100 pts
+                const scoreNivelEducacion = mapEducationLevel(nivelEducacion);
+                const scoreGradoAcademico = mapAcademicDegree(gradoAcademico);
+                const scoreAnosExperiencia = normalize(anosExperiencia, 0, 20); // Max 20 años para 100 pts
+                const scoreIdiomas = normalize(idiomasDominados, 0, 3); // Max 3 idiomas para 100 pts
+                const scoreSatisfaccion = normalize(mapSatisfaction(satisfaccionEmpleado), 1, 5); // Escala de 1-5
+
+                // Ponderación de los indicadores para el Capital Humano
+                return (
+                    (scoreHoras * 0.15) + 
+                    (scoreCertificados * 0.15) +
+                    (scoreNivelEducacion * 0.15) +
+                    (scoreGradoAcademico * 0.15) +
+                    (scoreAnosExperiencia * 0.1) +
+                    (scoreIdiomas * 0.1) +
+                    (scoreSatisfaccion * 0.2)
+                );
+            };
+
+            const calculateRelationalCapital = () => {
+                const tasaRetencion = document.getElementById('tasa-retencion').value;
+                const reconocimientoMarca = document.getElementById('reconocimiento-marca').value;
+                const alianzasEstrategicas = parseFloat(document.getElementById('alianzas-estrategicas').value) || 0;
+                const interaccionProfesional = document.getElementById('interaccion-profesional').value;
+                const redContactos = document.getElementById('red-contactos').value;
+                const participacionRedes = document.getElementById('participacion-redes').value;
+
+                // Normalización de cada indicador a 0-100
+                const scoreRetencion = normalize(mapRetentionRate(tasaRetencion), 0, 100);
+                const scoreReconocimiento = normalize(mapBrandRecognition(reconocimientoMarca), 0, 100);
+                const scoreAlianzas = normalize(alianzasEstrategicas, 0, 10); // Max 10 alianzas
+                const scoreInteraccion = normalize(mapInteractionLevel(interaccionProfesional), 1, 5);
+                const scoreRedContactos = normalize(mapNetworkCoverage(redContactos), 1, 5);
+                const scoreParticipacionRedes = normalize(mapParticipationInNetworks(participacionRedes), 0, 100);
+
+                // Ponderación de los indicadores para el Capital Relacional
+                return (
+                    (scoreRetencion * 0.25) +
+                    (scoreReconocimiento * 0.2) +
+                    (scoreAlianzas * 0.15) + // Ligeramente ajustado
+                    (scoreInteraccion * 0.15) +
+                    (scoreRedContactos * 0.1) +
+                    (scoreParticipacionRedes * 0.15)
+                );
+            };
+
+            const calculateStructuralCapital = () => {
+                const procesosDocumentados = parseFloat(document.getElementById('procesos-documentados').value) || 0;
+                const eficienciaOrganizacional = document.getElementById('eficiencia-organizacional').value;
+                const gestionConocimiento = document.getElementById('gestion-conocimiento').value;
+                const patentesMarcas = parseFloat(document.getElementById('patentes-marcas').value) || 0;
+                const inversionSoftware = parseFloat(document.getElementById('inversion-software').value) || 0;
+
+                // Normalización de cada indicador a 0-100
+                const scoreProcesos = normalize(procesosDocumentados, 0, 100); // Max 100 procesos documentados
+                const scoreEficiencia = normalize(mapEfficiency(eficienciaOrganizacional), 1, 5);
+                const scoreGestionConocimiento = normalize(mapKnowledgeManagement(gestionConocimiento), 1, 5);
+                const scorePatentes = normalize(patentesMarcas, 0, 15); // Max 15 patentes
+                const scoreInversionSoftware = normalize(inversionSoftware, 0, 50000); // Max S/.50,000 para 100 pts (ajustable)
+
+                // Ponderación de los indicadores para el Capital Estructural
+                return (
+                    (scoreProcesos * 0.25) +
+                    (scoreEficiencia * 0.25) + // Ligeramente ajustado
+                    (scoreGestionConocimiento * 0.2) +
+                    (scorePatentes * 0.15) + // Ligeramente ajustado
+                    (scoreInversionSoftware * 0.15)
+                );
+            };
+
+            const calculateInnovationCapital = () => {
+                const ideasImplementadas = parseFloat(document.getElementById('ideas-implementadas').value) || 0;
+                const proyectosInnovacionActivos = parseFloat(document.getElementById('proyectos-innovacion-activos').value) || 0;
+                const creatividadAplicada = document.getElementById('creatividad-aplicada').value;
+                const participacionID = document.getElementById('participacion-id').value;
+                const participacionMejoras = document.getElementById('participacion-mejoras').value;
+                const creatividadSoluciones = document.getElementById('creatividad-soluciones').value;
+
+                // Normalización de cada indicador a 0-100
+                const scoreIdeas = normalize(ideasImplementadas, 0, 10); // Max 10 ideas/empleado
+                const scoreProyectosActivos = normalize(proyectosInnovacionActivos, 0, 5); // Max 5 proyectos
+                const scoreCreatividadAplicada = normalize(mapCreativity(creatividadAplicada), 1, 5);
+                const scoreParticipacionID = normalize(mapInnovationParticipation(participacionID), 1, 5);
+                const scoreParticipacionMejoras = normalize(mapInnovationParticipation(participacionMejoras), 1, 5);
+                const scoreCreatividadSoluciones = normalize(mapCreativity(creatividadSoluciones), 1, 5);
+
+                // Ponderación de los indicadores para el Capital de Innovación
+                return (
+                    (scoreIdeas * 0.2) +
+                    (scoreProyectosActivos * 0.2) +
+                    (scoreCreatividadAplicada * 0.15) +
+                    (scoreParticipacionID * 0.15) +
+                    (scoreParticipacionMejoras * 0.15) +
+                    (scoreCreatividadSoluciones * 0.15)
+                );
+            };
+
+            const getRecommendation = (scores) => {
+                const minScore = Math.min(...Object.values(scores));
+                const areaToImprove = Object.keys(scores).find(key => scores[key] === minScore);
+                
+                const recommendations = {
+                    ch: {
+                        title: "Área de Enfoque: Capital Humano",
+                        text: "Para fortalecer tu Capital Humano, considera invertir en desarrollo profesional continuo, programas de bienestar y estrategias para mejorar la retención de talento clave. Un equipo capacitado y motivado es fundamental para el éxito de la organización."
+                    },
+                    cr: {
+                        title: "Área de Enfoque: Capital Relacional",
+                        text: "Mejorar las relaciones con clientes y socios estratégicos es crucial. Enfócate en la fidelización, la construcción de una marca fuerte y el fortalecimiento de tu red de contactos profesionales y la participación en comunidades relevantes para generar nuevas oportunidades y valor."
+                    },
+                    ce: {
+                        title: "Área de Enfoque: Capital Estructural",
+                        text: "Optimiza la infraestructura interna de tu organización. Prioriza la documentación y estandarización de procesos, la gestión eficiente del conocimiento y la inversión estratégica en tecnología que impulse la productividad y proteja tus activos intangibles como patentes y marcas."
+                    },
+                    ci: {
+                        title: "Área de Enfoque: Capital de Innovación",
+                        text: "Fomenta una cultura de innovación constante. Impulsa la generación y desarrollo de nuevas ideas por parte de los empleados, invierte en proyectos de investigación y desarrollo, y anima la participación activa en iniciativas que aporten soluciones creativas y disruptivas para los desafíos existentes."
+                    }
+                };
+                return recommendations[areaToImprove];
+            };
+
+            const renderChart = (scores) => {
+                const ctx = document.getElementById('ic-chart').getContext('2d');
+                const data = {
+                    labels: ['C. Humano', 'C. Relacional', 'C. Estructural', 'C. Innovación'],
+                    datasets: [{
+                        label: 'Puntuación de Capital',
+                        data: [scores.ch, scores.cr, scores.ce, scores.ci],
+                        backgroundColor: 'rgba(79, 209, 197, 0.2)',
+                        borderColor: 'rgba(79, 209, 197, 1)',
+                        pointBackgroundColor: 'rgba(79, 209, 197, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(79, 209, 197, 1)',
+                        borderWidth: 2
+                    }]
+                };
+
+                if (icChart) {
+                    icChart.destroy();
+                }
+
+                icChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 100,
+                                angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                                pointLabels: {
+                                    font: { size: 14, family: 'Poppins' },
+                                    color: '#edf2f7'
+                                },
+                                ticks: {
+                                    backdropColor: 'transparent',
+                                    color: '#a0aec0',
+                                    callback: function(value, index, values) {
+                                        if (value % 20 === 0) return value;
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            };
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const scores = {
+                    ch: calculateHumanCapital(),
+                    cr: calculateRelationalCapital(),
+                    ce: calculateStructuralCapital(),
+                    ci: calculateInnovationCapital(),
+                };
+
+                const totalScore = (scores.ch + scores.cr + scores.ce + scores.ci) / 4;
+
+                // Actualizar la UI
+                document.getElementById('ch-score').textContent = `${scores.ch.toFixed(1)} / 100`;
+                document.getElementById('cr-score').textContent = `${scores.cr.toFixed(1)} / 100`;
+                document.getElementById('ce-score').textContent = `${scores.ce.toFixed(1)} / 100`;
+                document.getElementById('ci-score').textContent = `${scores.ci.toFixed(1)} / 100`;
+                document.getElementById('total-ic-score').textContent = totalScore.toFixed(1);
+
+                const recommendation = getRecommendation(scores);
+                document.getElementById('recommendation-title').textContent = recommendation.title;
+                document.getElementById('recommendation-text').textContent = recommendation.text;
+
+                renderChart(scores);
+
+                resultsSection.style.display = 'flex';
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            resetButton.addEventListener('click', () => {
+                form.reset();
+                resultsSection.style.display = 'none';
+                if (icChart) {
+                    icChart.destroy();
+                    icChart = null;
+                }
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
